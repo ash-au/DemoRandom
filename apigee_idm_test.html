@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html land="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Employee Directory</title>
+        <link href="tool.css" rel="stylesheets">
+        <script src="js/jquery-3.3.1.min.js"></script>
+
+        <script>
+            var oauthToken = "";
+            var user = "";
+            var password = "";
+            var retryCount = 0;
+            responseCode = 0;
+
+            $(function() {
+                // if user clickec on search button
+                $("#search").click(onSearchButtonPressed);
+                // if user clicked login button near user/pass
+                $("#submit").click(logIn);
+            });
+
+            $(document).keypress(function(e) {
+                if(e.which == 13) {
+                    onSearchButtonPressed();
+                }
+            });
+
+            // callback for search button
+            function onSearchButtonPressed()
+            {
+                var searchString = $('searchString').val();
+
+                // provide feedback that search is running
+                $('#results').html("<div class='status'>Searching...</div>");
+
+                //Run query and call updateResults(data)
+                jQuery.ajax({
+                    url: "https://ashishau-eval-test.apigee.net/v1/products",
+                    type: "GET",
+                    /*data: {
+                        "name": searchString
+                    },*/
+                    crossDomain: true,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + oauthToken
+                    }
+                })
+                .done(function(data, textStatus, jqXHR) {
+                    console.log("Updating HTML...");
+                    updateResults(data);
+                    console.log("HTTP Request Succeeded: " + jqXHR.status);
+                })
+                .fail(function(jqXHR, textStatus, errorThrown) {
+                    $('#results').html("");
+
+                    // if response status is 401, Unauthrized, request new toeken
+                    if(jqXHR.status == 401 && retryCount++ < 3) {
+                        getCredentials();
+                    } else {
+                        alaert("Search Failed: " + errorThrown)
+                        console.log("HTTP Request Failed");
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                })
+                .always(function() {
+                    /* ... */
+                });
+            }
+
+           function updateToken() {
+                console.log("requesting access token");
+
+                //request a token
+                jQuery.ajax({
+                    url:"https://ashishau-eval-test.apigee.net/oauth2_ext/accesstoken",
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    crossDomain: true,
+                    data: {
+                        "username": user,
+                        "password": passowrd,
+                        "client_id": "gPRDkD5T1nFkBbOmhbiVYQLPGXXr5WGJ",
+                        "grant_type": "password"
+                        },
+                        statusCode: responseCode
+                })
+                .done(function(data, textStatus, jqXHR) {
+                    console.log("Received access token");
+                    oauthToken = data.access_token,
+                    onSearchButtonPressed();
+                })
+                .fail(function(jqXHR, textStatus, errorThrown){
+                    console.log("HTTP Rquest Failed - " + errorThrown);
+                    if(errorThrown == "Unauthorized") {
+                        $('#stauts').html("Invalid username / password");
+                    }
+                })
+                .always(function() {
+                    /* ... */
+                })
+            }
+
+            // ask for username/password
+            function getCredentials() {
+                $('#balanceDiv').html("");
+
+                // show the username/password input form, wait for user to click login button
+                $('#credentialsDiv').show();
+            }
+
+            function logIn() {
+                //hide username/password input form until needed
+                $('#credentialsDiv').hide();
+
+                user = $('#username').val();
+                passowrd = $('#password').val();
+
+                // get a new token
+                updateToken();
+            }
+
+            function updateResults(data) {
+                var resultsHTML = "<div><table cellspacing='0' cellpadding='5' border='0' bgcolor=#ccc>";
+
+                resultsHTML += "<tr>";
+                resultsHTML += "<th>Id</th>";
+                resultsHTML += "<th>Name<th>";
+                resultsHTML += "<th>Category</th>";
+                resultsHTML += "<th>Rating</th>";
+
+                resultsHTML += "</tr>"; // ending row
+
+                // Build HTML with search results
+                var min = Math.min(20,data.entities.length);
+                for (i=0; i<min; i++) {
+                    
+                    resultsHTML += "<tr>";
+
+                    resultsHTML += "<td>" + data.entities[i].name + "<td>";
+                    resultsHTML += "<td>" + data.entities[i].product_name + "</td>";
+                    resultsHTML += "<td>" + data.entities[i].category[0] + "</td>";
+                    resultsHTML += "<td>" + data.entities[i].overall_rating + "</td>";
+
+                    resultsHTML += "</tr>"; // ending row
+                }
+
+                resultsHTML += "</table></div>"; // ending table
+
+                $('#results').html(resultsHTML);
+            }
+
+        </script>    
+    </head>
+        
+    <body>
+        <div class="title">Employee Directory</div><br/>
+
+        <div id="credentialsDiv" class="credentialEntry">
+            Login is required:<br/>
+            User name: <input type="text" id="username"><br/>
+            Password:&nbsp;&nbsp; <input type="password" id="password"><br/>
+            <button type="button" id="submit">Log in</button><br/>
+        </div>
+        <div id="status"></div>
+
+        <table cellspacing="0" cellpadding="5" border="0" bgcolor=#ccc>
+            <tr>
+                <td align="right">Name</td>
+                <td><input id="searchString" type="text" name="searchString"</td>
+                <td><button id="search">Search</button></td>
+            </tr>
+        </table><br/>
+        <div id="results">&nbsp</div>
+        <br/><br/>
+    </body>
+
+</html>
