@@ -41,7 +41,7 @@
 
                 //Run query and call updateResults(data)
                 jQuery.ajax({
-                    url: "https://ashishau-eval-test.apigee.net/v1/products",
+                    url: "https://ashishau-eval-test.apigee.net/v1/marketdata",
                     type: "GET",
                     /*data: {
                         "name": searchString
@@ -61,10 +61,10 @@
                     $('#results').html("");
 
                     // if response status is 401, Unauthrized, request new toeken
-                    if(jqXHR.status == 401 && retryCount++ < 3) {
+                    if(jqXHR.status == 401 && retryCount++ < 1) {
                         getCredentials();
                     } else {
-                        alaert("Search Failed: " + errorThrown)
+                        alert("Search Failed: " + errorThrown)
                         console.log("HTTP Request Failed");
                         console.log(textStatus);
                         console.log(errorThrown);
@@ -128,26 +128,39 @@
             }
 
             function updateResults(data) {
-                var resultsHTML = "<div><table class='table table-striped table-bordered'>";
 
+                var resultsHTML = "<div align=\"center\"><table cellspacing=\"0\" cellpadding=\"5\" border=\"0\" bgcolor=#ccc>";
+                resultsHTML == "<tr>";
+                resultsHTML += "<td>Your current Interest Rate</td>";
+                resultsHTML += "<td>" + data.personal.home_loan_rate + "%</td>";
+                resultsHTML += "</tr>";
+                resultsHTML == "<tr>";
+                resultsHTML += "<td>Your current HomeLoan Balance is</td>";
+                resultsHTML += "<td>$" + data.personal.home_loan_value + "</td>";
+                resultsHTML += "</tr>";
+                resultsHTML += "</table><br/></div>";
+
+                resultsHTML += "<div><table class='table table-striped table-bordered'>";
                 resultsHTML += "<tr>";
-                resultsHTML += "<th>Id</th>";
-                resultsHTML += "<th>Name</th>";
-                resultsHTML += "<th>Category</th>";
-                resultsHTML += "<th>Rating</th>";
+                resultsHTML += "<th>Bank</th>";
+                resultsHTML += "<th>Product</th>";
+                resultsHTML += "<th>Intereset Rate</th>";
+                resultsHTML += "<th>Comparison Rate</th>";
+                resultsHTML += "<th>LVR</th>";
 
                 resultsHTML += "</tr>"; // ending row
 
                 // Build HTML with search results
-                var min = Math.min(20,data.entities.length);
+                var min = Math.min(20,data.compdb.length);
                 for (i=0; i<min; i++) {
                     
                     resultsHTML += "<tr>";
 
-                    resultsHTML += "<td>" + data.entities[i].name + "</td>";
-                    resultsHTML += "<td>" + data.entities[i].product_name + "</td>";
-                    resultsHTML += "<td>" + data.entities[i].category[0] + "</td>";
-                    resultsHTML += "<td>" + data.entities[i].overall_rating + "</td>";
+                    resultsHTML += "<td>" + data.compdb[i].bank + "</td>";
+                    resultsHTML += "<td>" + data.compdb[i].product + "</td>";
+                    resultsHTML += "<td>" + data.compdb[i].rate + "</td>";
+                    resultsHTML += "<td>" + data.compdb[i].comparison + "</td>";
+                    resultsHTML += "<td>" + data.compdb[i].lvr + "</td>";
 
                     resultsHTML += "</tr>"; // ending row
                 }
@@ -161,9 +174,11 @@
     </head>
         
     <body>
-        <div class="title">Rocking Apigee Demo</div><br/>
-
-        <div id="credentialsDiv" class="credentialEntry">
+        <div align="center">
+        <img src="main_logo.png" alt="Marvel Experience" style="width:100px;height:80px">
+        <h2>Welcome to Marvel Experiences</h2><br/>
+        </div>
+        <div id="credentialsDiv" class="credentialEntry" align="center">
             Login is required:<br/>
             User name: <input type="text" id="username"><br/>
             Password:&nbsp;&nbsp; <input type="password" id="password"><br/>
@@ -171,13 +186,6 @@
         </div>
         <div id="status"></div>
 
-        <table cellspacing="0" cellpadding="5" border="0" bgcolor=#ccc>
-            <tr>
-                <td align="right">Name</td>
-                <td><input id="searchString" type="text" name="searchString"</td>
-                <td><button id="search">Search</button></td>
-            </tr>
-        </table><br/>
         <div id="results">&nbsp</div>
         <br/><br/>
     </body>
